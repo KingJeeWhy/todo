@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+{% load staticfiles %}
+<head>
+    <meta charset="utf-8">
+    <title>TodoMVC</title>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="{% static 'js/jquery-1.10.2.min.js' %}"></script>
+    <link rel="stylesheet" type="text/css"
+          href="{% static 'css/index.css' %}"/>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+
+</head>
+<body>
+<input class="new-todo" autofocus autocomplete="off" id="btn"
+       placeholder="What needs to be done?"/>
+<ul class="todo-list" id="todo">
+</ul>
+
+
+<footer class="footer" style></footer>
+</body>
+</html>
+<script type="application/javascript">
+    $('#btn').bind('keydown', function (event) {
+        if (event.keyCode == "13") {
+            if ($('#btn').val().trim() != "") {
+                $.ajax({
+                    url: "add",
+                    dataType: "json",
+                    type: "GET",
+                    data: {"name": $('#btn').val()},
+                    success: function (data) {
+                        getAll();
+                        $('#btn').val("");
+                    }
+                })
+            }
+        }
+    });
+</script>
+<script type="application/javascript">
+    var status = "all";
+
+    function getAll() {
+        $.ajax({
+            url: "getAll",
+            dataType: "json",
+            type: "GET",
+            success: function (data) {
+                if (status == "all") {
+                    all(data)
+                }
+                if (status == "active") {
+                    active(data)
+                }
+                if (status == "completed") {
+                    completed(data)
+                }
+            }
+        })
+    }
+
+    $(function () {
+        getAll();
+    })
+</script>
+<script type="application/javascript">
+    $(".todo-list").on("click", ".destroy", function () {
+        $.ajax({
+            url: "delete",
+            dataType: "json",
+            type: "GET",
+            data: {"id": $(this).attr("value")},
+            success: function (data) {
+                getAll()
+            }
+        })
+    });
+</script>
+<script type="application/javascript">
+    function all(data) {
+        data = data.data;
+        var str = "";
+        for (var i = 0; i < data.length; i++) {
+            str += '<li class="todo">' +
+                '<div class="view">' +
+                '<input type="checkbox" class="toggle">' +
+                '<label>' + data[i].name + '</label>' +
+                '<button class="destroy" value=' + data[i].id + '></button>' +
+                '</div>' +
+                '<input type="text" class="edit">' +
+                '</li>';
+        }
+        $("#todo").html(str);
+        $(":checkbox").each(function (index) {
+            if (data[index].checked == 1) {
+                $(this).prop('checked', true);
+            }
+        });
+        var strSpan = "";
+        strSpan += '<ul class="filters">' +
+            '<li><a href="#/all" class="selected">All</a></li>\n' +
+            '<li><a href="#/Active" class="active">Active</a></li>\n' +
+            '<li><a href="#/completed" class="completed">Completed</a></li>' +
+            '</ul>';
+        $(".footer").html(strSpan);
+    }
+
+    function active(data) {
+        data = data.data;
+        var str = "";
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].checked == 1) {
+                continue;
+            }
+            str += '<li class="todo">' +
+                '<div class="view">' +
+                '<input type="checkbox" class="toggle">' +
+                '<label>' + data[i].name + '</label>' +
+                '<button class="destroy" value=' + data[i].id + '></button>' +
+                '</div>' +
+                '<input type="text" class="edit">' +
+                '</li>';
+        }
+        $("#todo").html(str);
+        var strSpan = "";
+        strSpan += '<ul class="filters">' +
+            '<li><a href="#/all" class="selected">All</a></li>\n' +
+            '<li><a href="#/Active" class="active">Active</a></li>\n' +
+            '<li><a href="#/completed" class="completed">Completed</a></li>' +
+            '</ul>';
+        $(".footer").html(strSpan);
+    }
+
+    function completed(data) {
+        data = data.data;
+        var str = "";
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].checked == 0) {
+                continue;
+            }
+            str += '<li class="todo">' +
+                '<div class="view">' +
+                '<input type="checkbox" class="toggle">' +
+                '<label>' + data[i].name + '</label>' +
+                '<button class="destroy" value=' + data[i].id + '></button>' +
+                '</div>' +
+                '<input type="text" class="edit">' +
+                '</li>';
+        }
+        $("#todo").html(str);
+        $(".toggle").prop('checked', true);
+        var strSpan = "";
+        strSpan += '<ul class="filters">' +
+            '<li><a href="#/all" class="selected">All</a></li>\n' +
+            '<li><a href="#/Active" class="active">Active</a></li>\n' +
+            '<li><a href="#/completed" class="completed">Completed</a></li>' +
+            '</ul>';
+        $(".footer").html(strSpan);
+    }
+</script>
+<script type="application/javascript">
+    $(".footer").on("click", ".selected", function () {
+        status = "all";
+        getAll();
+    });
+    $(".footer").on("click", ".active", function () {
+        status = "active";
+        getAll();
+    });
+    $(".footer").on("click", ".completed", function () {
+        status = "completed";
+        getAll();
+    });
+    $(".todo-list").on("click", ".toggle", function () {
+        $(this).parent().children(".destroy").attr("value");
+        var cho = 0;
+        if ($(this).prop("checked")) {
+            cho = 1;
+        }
+        $.ajax({
+            url: "change",
+            dataType: "json",
+            type: "GET",
+            data: {"id": $(this).parent().children(".destroy").attr("value"), "checked": cho},
+            success: function (data) {
+                getAll();
+            }
+        })
+    });
+</script>
